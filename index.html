@@ -93,6 +93,7 @@
         
         .ascent-tag { background: #444; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 9px; margin-right: 4px; display: inline-block; margin-top: 4px; }
         .log-ascent-btn { background: #333; color: var(--accent); border: 1px solid var(--accent); font-size: 10px; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
+        .edit-btn { background: transparent; color: #777; border: 1px solid #444; font-size: 10px; padding: 4px 8px; border-radius: 4px; cursor: pointer; margin-right: 5px; }
 
         nav#mobile-nav { display: flex; background: #111; border-top: 1px solid #333; height: 65px; padding-bottom: env(safe-area-inset-bottom); }
         .nav-item { flex: 1; text-align: center; padding: 20px; color: #777; font-size: 0.9rem; font-weight: bold; cursor: pointer; }
@@ -138,7 +139,9 @@
 
         <div id="create-view" class="side-panel active-panel">
             <div class="controls">
-                <h3 style="margin-top:0;">New Route</h3>
+                <h3 id="form-title" style="margin-top:0;">New Route</h3>
+                <input type="hidden" id="edit-id" value="">
+                
                 <div class="marker-toolbar">
                     <div class="type-btn active" onclick="setHoldType('start', event)" data-type="start">Start</div>
                     <div class="type-btn" onclick="setHoldType('hand', event)" data-type="hand">Hand</div>
@@ -168,6 +171,7 @@
                 </div>
                 <textarea id="route-notes" rows="2" placeholder="Notes..."></textarea>
                 <button id="save-btn" class="btn btn-primary" onclick="saveRoute()">Save Route</button>
+                <button id="cancel-edit-btn" class="btn btn-secondary" style="display:none;" onclick="cancelEdit()">Cancel Edit</button>
             </div>
         </div>
 
@@ -288,17 +292,61 @@
 
         function saveRoute() {
             const name = document.getElementById('route-name').value;
-            const notes = document.getElementById('route-notes').value;
+            const editId = document.getElementById('edit-id').value;
             if (!name) return alert("Name required");
-            savedRoutes.unshift({ 
-                id: Date.now(), name, grade: document.getElementById('route-grade').value || "?", 
+
+            const routeData = { 
+                id: editId ? parseInt(editId) : Date.now(), 
+                name, 
+                grade: document.getElementById('route-grade').value || "?", 
                 setter: document.getElementById('route-setter').value || "Unknown",
-                ascents: [], moves: [...currentMoves], 
+                moves: [...currentMoves], 
                 rating: parseInt(document.getElementById('route-rating').value), 
                 isBenchmark: document.getElementById('route-benchmark').checked,
-                notes: notes // Save notes data
-            });
+                notes: document.getElementById('route-notes').value
+            };
+
+            if (editId) {
+                const index = savedRoutes.findIndex(r => r.id === parseInt(editId));
+                routeData.ascents = savedRoutes[index].ascents || []; // Keep existing ascents
+                savedRoutes[index] = routeData;
+            } else {
+                routeData.ascents = [];
+                savedRoutes.unshift(routeData);
+            }
+
             localStorage.setItem('myRoutes', JSON.stringify(savedRoutes));
+            location.reload();
+        }
+
+        function startEdit(id, event) {
+            event.stopPropagation();
+            const route = savedRoutes.find(r => r.id === id);
+            if (!route) return;
+
+            // Populate form
+            document.getElementById('edit-id').value = route.id;
+            document.getElementById('route-name').value = route.name;
+            document.getElementById('route-grade').value = route.grade;
+            document.getElementById('route-rating').value = route.rating;
+            document.getElementById('route-setter').value = route.setter;
+            document.getElementById('route-benchmark').checked = route.isBenchmark;
+            document.getElementById('route-notes').value = route.notes || "";
+            
+            // Set moves
+            currentMoves = [...route.moves];
+            renderMarkers();
+
+            // UI Changes
+            document.getElementById('form-title').innerText = "Editing: " + route.name;
+            document.getElementById('save-btn').innerText = "Update Route";
+            document.getElementById('cancel-edit-btn').style.display = "block";
+            
+            switchTab('create');
+            resetZoom();
+        }
+
+        function cancelEdit() {
             location.reload();
         }
 
@@ -348,8 +396,6 @@
                 };
                 const stars = "★".repeat(r.rating) + "☆".repeat(3 - r.rating);
                 const ascTags = (r.ascents || []).map(n => `<span class="ascent-tag">${n}</span>`).join('');
-                
-                // Display notes if they exist
                 const notesHtml = r.notes ? `<div style="font-size: 11px; color: #aaa; margin-top: 8px; font-style: italic; border-top: 1px solid #3d3d3d; padding-top: 5px;">${r.notes}</div>` : '';
 
                 card.innerHTML = `
@@ -360,7 +406,8 @@
                     <div style="font-size:10px; color:#555; margin-top:4px;">${stars}</div>
                     <div>${ascTags}</div>
                     ${notesHtml}
-                    <div style="margin-top:10px; display:flex; justify-content:flex-end;">
+                    <div style="margin-top:10px; display:flex; justify-content:flex-end; gap:5px;">
+                        <button class="edit-btn" onclick="startEdit(${r.id}, event)">EDIT</button>
                         <button class="log-ascent-btn" onclick="logAscent(${r.id}, event)">+ LOG</button>
                     </div>
                 `;
