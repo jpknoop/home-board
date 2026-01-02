@@ -32,21 +32,19 @@
             border-bottom: 1px solid #333; z-index: 10;
         }
 
-        #app-container { flex: 1; overflow-y: auto; position: relative; }
+        #app-container { flex: 1; overflow-y: auto; position: relative; display: flex; flex-direction: column; }
 
-        /* --- Viewport & Zoom Container --- */
+        /* --- Viewport & Zoom --- */
         #viewport {
             width: 100%; height: 45vh;
             overflow: hidden; background: #000;
-            position: relative; touch-action: none;
-            cursor: grab;
+            position: relative; touch-action: none; cursor: grab;
         }
         #viewport:active { cursor: grabbing; }
 
         #board-wrapper {
             position: absolute; width: 100%;
             transform-origin: 0 0; will-change: transform;
-            /* Faster transition for responsiveness */
             transition: transform 0.05s linear;
         }
 
@@ -57,31 +55,27 @@
             border-radius: 50%; transform: translate(-50%, -50%);
             display: flex; align-items: center; justify-content: center;
             font-weight: bold; font-size: 10px; pointer-events: none;
-            border: 1.5px solid white; color: white;
-            z-index: 5;
+            border: 1.5px solid white; color: white; z-index: 5;
         }
         .hold-marker.type-start { background-color: var(--start-color); }
         .hold-marker.type-hand { background-color: var(--hand-color); }
         .hold-marker.type-foot { background-color: var(--foot-color); width: 16px; height: 16px; }
         .hold-marker.type-finish { background-color: var(--finish-color); border: 2px dashed white; }
 
-        /* --- UI Controls --- */
-        .controls { padding: 15px; background: var(--dark); }
-        
+        /* --- Controls --- */
+        .controls { padding: 15px; background: var(--dark); overflow-y: auto; }
         .zoom-control-bar {
             background: #222; padding: 10px 15px;
             display: flex; align-items: center; gap: 15px;
             border-bottom: 1px solid #333;
         }
-        
-        .zoom-slider { flex: 1; accent-color: var(--accent); cursor: pointer; }
+        .zoom-slider { flex: 1; accent-color: var(--accent); }
 
         .marker-toolbar {
             display: flex; justify-content: space-between;
             margin-bottom: 10px; background: #000;
             padding: 5px; border-radius: 8px;
         }
-
         .type-btn { flex: 1; padding: 12px 0; text-align: center; font-size: 0.8rem; color: #666; cursor: pointer; }
         .type-btn.active { color: white; background: #333; border-radius: 4px; font-weight: bold; }
 
@@ -96,7 +90,17 @@
         .btn-secondary { background-color: #444; color: white; }
         .btn-update { background-color: #FF9800; color: white; }
 
-        /* --- Logbook --- */
+        /* --- LANDSCAPE OPTIMIZATION --- */
+        @media (orientation: landscape) and (min-width: 768px) {
+            #app-container { flex-direction: row; }
+            #create-view { display: flex !important; flex-direction: row; width: 100%; }
+            #viewport { flex: 2; height: 100% !important; border-right: 1px solid #333; }
+            .controls { flex: 1; height: 100%; }
+            .zoom-control-bar { position: absolute; bottom: 20px; left: 20px; width: 300px; z-index: 10; border-radius: 8px; border: 1px solid #444; }
+            #list-view .filter-bar { position: sticky; top: 0; width: 100%; }
+            #routes-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; }
+        }
+
         .filter-bar { background: #111; padding: 10px; display: flex; gap: 5px; position: sticky; top: 0; z-index: 5; }
         .route-card { background: var(--card-bg); margin: 10px; padding: 15px; border-radius: 8px; border-left: 4px solid var(--accent); }
         .route-card.benchmark { border-left-color: var(--benchmark-gold); }
@@ -114,12 +118,12 @@
     </header>
 
     <div id="app-container">
-        <div id="setup-screen" style="padding:50px; text-align:center;">
+        <div id="setup-screen" style="padding:50px; text-align:center; width: 100%;">
             <h2>Upload Board Photo</h2>
             <input type="file" id="imgInput" accept="image/*">
         </div>
 
-        <div id="create-view" style="display:none;">
+        <div id="create-view" style="display:none; width: 100%;">
             <div id="viewport">
                 <div id="board-wrapper">
                     <img id="board-image" src="" alt="Board">
@@ -128,7 +132,6 @@
             </div>
             
             <div class="zoom-control-bar">
-                <span style="font-size: 12px;">Zoom</span>
                 <input type="range" class="zoom-slider" id="zoomSlider" min="1" max="4" step="0.1" value="1">
                 <button onclick="resetView()" style="background:none; border:1px solid #555; color:#aaa; font-size:10px; padding:4px 8px;">RESET</button>
             </div>
@@ -140,12 +143,10 @@
                     <div class="type-btn" onclick="setHoldType('foot')" data-type="foot">Foot</div>
                     <div class="type-btn" onclick="setHoldType('finish')" data-type="finish">Finish</div>
                 </div>
-
                 <div style="display:flex; gap:10px; margin-bottom: 10px;">
                     <button class="btn btn-secondary" style="flex:1" onclick="undoLastMove()">Undo</button>
                     <button class="btn btn-secondary" style="flex:1" onclick="clearMoves()">Clear</button>
                 </div>
-
                 <input type="text" id="route-name" placeholder="Route Name">
                 <div style="display:flex; gap:10px;">
                     <input type="text" id="route-grade" placeholder="Grade" style="flex:1;">
@@ -158,17 +159,16 @@
                 </div>
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; background:#2a2a2a; padding:10px; border-radius:6px;">
                     <input type="checkbox" id="route-benchmark" style="width:auto; margin:0;">
-                    <label style="font-size:0.9rem;">Benchmark Route</label>
+                    <label style="font-size:0.9rem;">Benchmark</label>
                 </div>
                 <textarea id="route-notes" rows="2" placeholder="Notes..."></textarea>
-                
                 <button id="save-btn" class="btn btn-primary" onclick="saveRoute()">Save Route</button>
                 <button id="update-btn" class="btn btn-update" style="display:none;" onclick="updateRoute()">Update Route</button>
-                <button id="cancel-edit-btn" class="btn btn-secondary" style="display:none;" onclick="cancelEdit()">Cancel Edit</button>
+                <button id="cancel-edit-btn" class="btn btn-secondary" style="display:none;" onclick="cancelEdit()">Cancel</button>
             </div>
         </div>
 
-        <div id="list-view" style="display:none;">
+        <div id="list-view" style="display:none; width: 100%;">
             <div class="filter-bar">
                 <input type="text" id="filter-grade" placeholder="Grade" oninput="renderLogbook()" style="margin:0; flex:1;">
                 <select id="filter-rating" onchange="renderLogbook()" style="margin:0; flex:1;">
@@ -176,10 +176,6 @@
                     <option value="3">★★★</option>
                     <option value="2">★★☆+</option>
                     <option value="1">★☆☆+</option>
-                </select>
-                <select id="filter-bench" onchange="renderLogbook()" style="margin:0; flex:1;">
-                    <option value="all">All</option>
-                    <option value="benchmark">Bench</option>
                 </select>
             </div>
             <div id="routes-list"></div>
@@ -194,20 +190,17 @@
     <script>
         let currentMoves = [];
         let savedRoutes = JSON.parse(localStorage.getItem('myRoutes')) || [];
-        let boardImgData = localStorage.getItem('boardImage');
         let currentHoldType = 'start';
         let editingRouteId = null;
-
-        // View State
         let scale = 1, posX = 0, posY = 0, startX = 0, startY = 0, isDragging = false;
 
         const viewport = document.getElementById('viewport');
         const boardWrapper = document.getElementById('board-wrapper');
-        const boardImage = document.getElementById('board-image');
         const zoomSlider = document.getElementById('zoomSlider');
 
-        if (boardImgData) {
-            boardImage.src = boardImgData;
+        // Init App
+        if (localStorage.getItem('boardImage')) {
+            document.getElementById('board-image').src = localStorage.getItem('boardImage');
             document.getElementById('setup-screen').style.display = 'none';
             document.getElementById('create-view').style.display = 'block';
         }
@@ -215,7 +208,7 @@
         document.getElementById('imgInput').onchange = (e) => {
             const reader = new FileReader();
             reader.onload = () => {
-                boardImage.src = reader.result;
+                document.getElementById('board-image').src = reader.result;
                 localStorage.setItem('boardImage', reader.result);
                 document.getElementById('setup-screen').style.display = 'none';
                 document.getElementById('create-view').style.display = 'block';
@@ -223,76 +216,37 @@
             reader.readAsDataURL(e.target.files[0]);
         };
 
-        // --- UNIFIED ZOOM & DRAG ENGINE ---
+        // --- Interaction Engine ---
+        zoomSlider.oninput = (e) => { scale = parseFloat(e.target.value); updateTransform(); };
+        viewport.onwheel = (e) => { e.preventDefault(); scale = Math.min(Math.max(1, scale + (e.deltaY > 0 ? -0.1 : 0.1)), 4); zoomSlider.value = scale; updateTransform(); };
 
-        // 1. Zoom Slider
-        zoomSlider.oninput = (e) => {
-            scale = parseFloat(e.target.value);
-            updateTransform();
-        };
-
-        // 2. Desktop Mouse Wheel Support
-        viewport.onwheel = (e) => {
-            e.preventDefault();
-            const step = e.deltaY > 0 ? -0.1 : 0.1;
-            scale = Math.min(Math.max(1, scale + step), 4);
-            zoomSlider.value = scale;
-            updateTransform();
-        };
-
-        // 3. Unified Drag Logic (Mouse & Touch)
-        const startDrag = (e) => {
-            isDragging = true;
-            const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-            const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-            startX = clientX - posX;
-            startY = clientY - posY;
-        };
-
-        const moveDrag = (e) => {
-            if (!isDragging) return;
-            const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-            const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-            posX = clientX - startX;
-            posY = clientY - startY;
-            updateTransform();
-        };
-
+        const getXY = (e) => e.type.includes('touch') ? [e.touches[0].clientX, e.touches[0].clientY] : [e.clientX, e.clientY];
+        const startDrag = (e) => { isDragging = true; const [x, y] = getXY(e); startX = x - posX; startY = y - posY; };
+        const moveDrag = (e) => { if (!isDragging) return; const [x, y] = getXY(e); posX = x - startX; posY = y - startY; updateTransform(); };
         const endDrag = () => { isDragging = false; };
 
         viewport.addEventListener('mousedown', startDrag);
         window.addEventListener('mousemove', moveDrag);
         window.addEventListener('mouseup', endDrag);
-
         viewport.addEventListener('touchstart', startDrag);
         window.addEventListener('touchmove', moveDrag);
         window.addEventListener('touchend', endDrag);
 
-        // 4. Tap/Click to Place Hold
-        viewport.onclick = (e) => {
-            // Prevent placing hold if we were just dragging
+        boardWrapper.onclick = (e) => {
             if (isDragging) return;
-
             const rect = boardWrapper.getBoundingClientRect();
             const x = ((e.clientX - rect.left) / rect.width) * 100;
             const y = ((e.clientY - rect.top) / rect.height) * 100;
-
             let order = currentHoldType === 'foot' ? 0 : currentMoves.filter(m => m.type !== 'foot').length + 1;
             currentMoves.push({ x, y, type: currentHoldType, order });
             if (currentHoldType === 'start') setHoldType('hand');
             renderMarkers();
         };
 
-        function updateTransform() {
-            boardWrapper.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
-        }
+        function updateTransform() { boardWrapper.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`; }
+        function resetView() { scale = 1; posX = 0; posY = 0; zoomSlider.value = 1; updateTransform(); }
 
-        function resetView() {
-            scale = 1; posX = 0; posY = 0; zoomSlider.value = 1; updateTransform();
-        }
-
-        // --- RENDER & DATA ---
-
+        // --- Logic ---
         function renderMarkers() {
             const container = document.getElementById('markers-container');
             container.innerHTML = '';
@@ -312,29 +266,21 @@
 
         function saveRoute() {
             const name = document.getElementById('route-name').value;
-            if (!name) return alert("Please name your route!");
-            savedRoutes.unshift({
-                id: Date.now(), name,
-                grade: document.getElementById('route-grade').value || "?",
-                rating: parseInt(document.getElementById('route-rating').value),
-                isBenchmark: document.getElementById('route-benchmark').checked,
-                notes: document.getElementById('route-notes').value,
-                moves: [...currentMoves]
-            });
+            if (!name) return alert("Name required!");
+            savedRoutes.unshift({ id: Date.now(), name, grade: document.getElementById('route-grade').value || "?", rating: parseInt(document.getElementById('route-rating').value), isBenchmark: document.getElementById('route-benchmark').checked, notes: document.getElementById('route-notes').value, moves: [...currentMoves] });
             localStorage.setItem('myRoutes', JSON.stringify(savedRoutes));
             cancelEdit(); switchTab('list');
         }
 
         function editRoute(id) {
-            const route = savedRoutes.find(r => r.id === id);
+            const r = savedRoutes.find(x => x.id === id);
             editingRouteId = id;
-            document.getElementById('route-name').value = route.name;
-            document.getElementById('route-grade').value = route.grade;
-            document.getElementById('route-rating').value = route.rating || 0;
-            document.getElementById('route-benchmark').checked = route.isBenchmark || false;
-            document.getElementById('route-notes').value = route.notes || "";
-            currentMoves = [...route.moves];
-            
+            document.getElementById('route-name').value = r.name;
+            document.getElementById('route-grade').value = r.grade;
+            document.getElementById('route-rating').value = r.rating;
+            document.getElementById('route-benchmark').checked = r.isBenchmark;
+            document.getElementById('route-notes').value = r.notes;
+            currentMoves = [...r.moves];
             document.getElementById('save-btn').style.display = 'none';
             document.getElementById('update-btn').style.display = 'block';
             document.getElementById('cancel-edit-btn').style.display = 'block';
@@ -342,15 +288,8 @@
         }
 
         function updateRoute() {
-            const index = savedRoutes.findIndex(r => r.id === editingRouteId);
-            savedRoutes[index] = {...savedRoutes[index],
-                name: document.getElementById('route-name').value,
-                grade: document.getElementById('route-grade').value,
-                rating: parseInt(document.getElementById('route-rating').value),
-                isBenchmark: document.getElementById('route-benchmark').checked,
-                notes: document.getElementById('route-notes').value,
-                moves: [...currentMoves]
-            };
+            const idx = savedRoutes.findIndex(r => r.id === editingRouteId);
+            savedRoutes[idx] = { ...savedRoutes[idx], name: document.getElementById('route-name').value, grade: document.getElementById('route-grade').value, rating: parseInt(document.getElementById('route-rating').value), isBenchmark: document.getElementById('route-benchmark').checked, notes: document.getElementById('route-notes').value, moves: [...currentMoves] };
             localStorage.setItem('myRoutes', JSON.stringify(savedRoutes));
             cancelEdit(); switchTab('list');
         }
@@ -358,52 +297,28 @@
         function cancelEdit() {
             editingRouteId = null; currentMoves = []; renderMarkers();
             document.getElementById('route-name').value = '';
-            document.getElementById('route-grade').value = '';
-            document.getElementById('route-notes').value = '';
-            document.getElementById('route-benchmark').checked = false;
             document.getElementById('save-btn').style.display = 'block';
             document.getElementById('update-btn').style.display = 'none';
             document.getElementById('cancel-edit-btn').style.display = 'none';
-        }
-
-        function deleteRoute(id) {
-            if(confirm("Delete this route?")) {
-                savedRoutes = savedRoutes.filter(r => r.id !== id);
-                localStorage.setItem('myRoutes', JSON.stringify(savedRoutes));
-                renderLogbook();
-            }
         }
 
         function renderLogbook() {
             const container = document.getElementById('routes-list');
             const gF = document.getElementById('filter-grade').value.toLowerCase();
             const rF = document.getElementById('filter-rating').value;
-            const bF = document.getElementById('filter-bench').value;
             container.innerHTML = '';
             savedRoutes.filter(r => {
                 const mg = r.grade.toLowerCase().includes(gF);
                 const mr = rF === 'all' ? true : r.rating >= parseInt(rF);
-                const mb = bF === 'all' ? true : r.isBenchmark;
-                return mg && mr && mb;
+                return mg && mr;
             }).forEach(r => {
                 const card = document.createElement('div');
                 card.className = `route-card ${r.isBenchmark ? 'benchmark' : ''}`;
-                card.innerHTML = `
-                    <div style="display:flex; justify-content:space-between"><strong>${r.name}</strong> <span>${r.grade}</span></div>
-                    <div style="color:#ffb400; margin:5px 0;">${"★".repeat(r.rating)}${"☆".repeat(3-r.rating)}</div>
-                    <div style="display:flex; gap:10px; margin-top:10px;">
-                        <button class="btn-secondary" style="flex:1; padding:5px; font-size:11px;" onclick="viewRoute(${r.id})">VIEW</button>
-                        <button class="btn-primary" style="flex:1; padding:5px; font-size:11px;" onclick="editRoute(${r.id})">EDIT</button>
-                        <button style="background:none; border:none; color:#F44336; font-size:11px;" onclick="deleteRoute(${r.id})">DEL</button>
-                    </div>
-                `;
+                card.innerHTML = `<strong>${r.name}</strong> (${r.grade})<br><span style="color:gold">${"★".repeat(r.rating)}</span><br>
+                    <button class="btn-primary" style="padding:5px; margin-top:5px; width:auto; font-size:10px" onclick="editRoute(${r.id})">EDIT</button>
+                    <button class="btn-secondary" style="padding:5px; width:auto; font-size:10px" onclick="deleteRoute(${r.id})">DEL</button>`;
                 container.appendChild(card);
             });
-        }
-
-        function viewRoute(id) {
-            const r = savedRoutes.find(x => x.id === id);
-            currentMoves = r.moves; renderMarkers(); switchTab('create'); resetView();
         }
 
         function switchTab(t) {
@@ -414,9 +329,10 @@
             if (t === 'list') renderLogbook();
         }
 
+        function deleteRoute(id) { if(confirm("Delete?")) { savedRoutes = savedRoutes.filter(r => r.id !== id); localStorage.setItem('myRoutes', JSON.stringify(savedRoutes)); renderLogbook(); } }
         function undoLastMove() { currentMoves.pop(); renderMarkers(); }
         function clearMoves() { currentMoves = []; renderMarkers(); }
-        function clearData() { if(confirm("Reset everything?")) { localStorage.clear(); location.reload(); } }
+        function clearData() { if(confirm("Factory reset?")) { localStorage.clear(); location.reload(); } }
     </script>
 </body>
 </html>
