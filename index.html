@@ -14,22 +14,23 @@
         /* PHONE & IPAD SMOOTHNESS FIXES */
         html, body {
             overscroll-behavior-y: none;
-            position: fixed;
             width: 100%;
-            height: 100%;
+            height: 100dvh; /* Dynamic viewport height for mobile */
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--dark); color: var(--light); margin: 0; padding: 0;
             display: flex; flex-direction: column;
+            overflow: hidden;
         }
 
         header {
             padding: 10px 20px; background: #111; display: flex;
             justify-content: space-between; align-items: center; border-bottom: 1px solid #333; z-index: 10;
+            padding-top: env(safe-area-inset-top);
         }
 
         #app-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* TABLET & DESKTOP LOGIC (Breakpoint adjusted to 768px to catch iPad Landscape) */
+        /* TABLET & DESKTOP LOGIC */
         @media (min-width: 768px) {
             #app-container { flex-direction: row; }
             #viewport-section { flex: 3; border-right: 1px solid #333; display: flex; flex-direction: column; position: relative; }
@@ -37,6 +38,18 @@
             .side-panel.active-panel { display: flex; }
             #desktop-nav { display: flex !important; gap: 8px; align-items: center; }
             nav#mobile-nav { display: none !important; }
+        }
+
+        /* MOBILE SIDE PANEL SCROLL FIX */
+        @media (max-width: 767px) {
+            .side-panel {
+                flex: 1;
+                overflow-y: auto !important;
+                -webkit-overflow-scrolling: touch;
+                display: none;
+                height: 100%;
+            }
+            .side-panel.active-panel { display: flex; flex-direction: column; }
         }
 
         #desktop-nav { display: none; }
@@ -56,11 +69,11 @@
             transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center;
             font-weight: bold; font-size: 10px; pointer-events: none; border: 1.5px solid rgba(255,255,255,0.7); 
             color: white; text-shadow: 0 0 3px rgba(0,0,0,0.8); box-shadow: 0 0 5px rgba(0,0,0,0.3);
-            opacity: 0.7;
+            opacity: 0.8;
         }
         .hold-marker.type-start { background-color: var(--start-color); }
         .hold-marker.type-hand { background-color: var(--hand-color); }
-        .hold-marker.type-foot { background-color: var(--foot-color); width: 12px; height: 12px; opacity: 0.5; }
+        .hold-marker.type-foot { background-color: var(--foot-color); width: 12px; height: 12px; opacity: 0.6; }
         .hold-marker.type-finish { background-color: var(--finish-color); border: 2px dashed rgba(255,255,255,0.8); }
 
         /* UI Styling */
@@ -187,8 +200,9 @@
         let savedRoutes = JSON.parse(localStorage.getItem('myRoutes')) || [];
         let boardImgData = localStorage.getItem('boardImage');
         let currentHoldType = 'start';
-        let scale = 1, pointX = 0, pointY = 0, start = { x: 0, y: 0 }, evCache = [], prevDiff = -1, isDragging = false;
+        let scale = 1, pointX = 0, pointY = 0, start = { x: 0, y: 0 }, startPos = { x: 0, y: 0 }, evCache = [], prevDiff = -1, isDragging = false, touchStartTime = 0;
         let bmFilterActive = false;
+        const moveThreshold = 8; // Pixel threshold to distinguish tap from drag
 
         const boardWrapper = document.getElementById('board-wrapper');
         const boardImage = document.getElementById('board-image');
@@ -203,10 +217,12 @@
             reader.readAsDataURL(e.target.files[0]);
         };
 
-        // ENHANCED MOBILE TOUCH HANDLING
+        // REFINED MOBILE TOUCH HANDLING
         viewport.addEventListener('pointerdown', (e) => {
             evCache.push(e);
             start = { x: e.clientX - pointX, y: e.clientY - pointY };
+            startPos = { x: e.clientX, y: e.clientY };
+            touchStartTime = Date.now();
             isDragging = false;
         });
 
@@ -220,7 +236,8 @@
                 if (prevDiff > 0) scale = Math.min(Math.max(1, scale + (curDiff - prevDiff) * 0.01), 5);
                 prevDiff = curDiff;
             } else if (evCache.length === 1) {
-                if (Math.abs(e.clientX - (start.x + pointX)) > 5 || Math.abs(e.clientY - (start.y + pointY)) > 5) {
+                const dist = Math.hypot(e.clientX - startPos.x, e.clientY - startPos.y);
+                if (dist > moveThreshold) {
                     isDragging = true;
                     pointX = e.clientX - start.x;
                     pointY = e.clientY - start.y;
@@ -230,15 +247,26 @@
         });
 
         viewport.addEventListener('pointerup', (e) => {
-            if (!isDragging && evCache.length === 1) {
+            // Logic for placing a hold (Tap)
+            if (!isDragging && evCache.length === 1 && (Date.now() - touchStartTime) < 300) {
                 const rect = boardWrapper.getBoundingClientRect();
                 const x = ((e.clientX - rect.left) / rect.width) * 100;
                 const y = ((e.clientY - rect.top) / rect.height) * 100;
+                
                 let order = currentHoldType === 'foot' ? 0 : currentMoves.filter(m => m.type !== 'foot').length + 1;
                 currentMoves.push({ x, y, type: currentHoldType, order });
-                if (currentHoldType === 'start') setHoldType('hand');
+                
+                // Auto-advance logic
+                if (currentHoldType === 'start' && currentMoves.filter(m => m.type === 'start').length >= 2) {
+                    setHoldType('hand');
+                } else if (currentHoldType === 'start') {
+                    // Stay on start for second hold if only one exists
+                } else if (currentHoldType === 'finish') {
+                    // stay on finish
+                }
                 renderMarkers();
             }
+            
             evCache = evCache.filter(ev => ev.pointerId !== e.pointerId);
             if (evCache.length < 2) prevDiff = -1;
         });
@@ -247,7 +275,10 @@
             boardWrapper.style.transform = `translate3d(${pointX}px, ${pointY}px, 0) scale(${scale})`;
         }
 
-        function resetZoom() { scale = 1; pointX = 0; pointY = 0; updateTransform(); }
+        function resetZoom(e) { 
+            if(e) e.stopPropagation();
+            scale = 1; pointX = 0; pointY = 0; updateTransform(); 
+        }
 
         function renderMarkers() {
             document.getElementById('markers-container').innerHTML = currentMoves.map(m => `
@@ -311,7 +342,12 @@
             filtered.forEach(r => {
                 const card = document.createElement('div');
                 card.className = `route-card ${r.isBenchmark ? 'benchmark' : ''}`;
-                card.onclick = () => { currentMoves = r.moves; renderMarkers(); if(window.innerWidth < 768) switchTab('create'); resetZoom(); };
+                card.onclick = () => { 
+                    currentMoves = r.moves; 
+                    renderMarkers(); 
+                    if(window.innerWidth < 768) switchTab('create'); 
+                    resetZoom(); 
+                };
                 const stars = "★".repeat(r.rating) + "☆".repeat(3 - r.rating);
                 const ascTags = (r.ascents || []).map(n => `<span class="ascent-tag">${n}</span>`).join('');
                 card.innerHTML = `
@@ -337,8 +373,13 @@
         function switchTab(t) {
             document.getElementById('create-view').classList.toggle('active-panel', t === 'create');
             document.getElementById('list-view').classList.toggle('active-panel', t === 'list');
-            document.getElementById('nav-create').classList.toggle('active', t === 'create');
-            document.getElementById('nav-list').classList.toggle('active', t === 'list');
+            
+            // UI Button Active States
+            const mobileCreate = document.getElementById('nav-create');
+            const mobileList = document.getElementById('nav-list');
+            if(mobileCreate) mobileCreate.classList.toggle('active', t === 'create');
+            if(mobileList) mobileList.classList.toggle('active', t === 'list');
+            
             document.getElementById('toggle-create').classList.toggle('active', t === 'create');
             document.getElementById('toggle-list').classList.toggle('active', t === 'list');
 
@@ -350,9 +391,12 @@
 
         function undoLastMove() { currentMoves.pop(); renderMarkers(); }
         function clearMoves() { currentMoves = []; renderMarkers(); }
-        function clearData() { if(confirm("Reset all?")) { localStorage.clear(); location.reload(); } }
+        function clearData() { if(confirm("Reset all data? This cannot be undone.")) { localStorage.clear(); location.reload(); } }
 
-        renderLogbook(); populateGrades();
+        // Initial setup
+        renderLogbook(); 
+        populateGrades();
+        if (window.innerWidth < 768) switchTab('create');
     </script>
 </body>
 </html>
