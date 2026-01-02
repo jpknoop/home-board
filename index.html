@@ -11,11 +11,10 @@
             --light: #f4f4f4; --accent: #00BCD4; --benchmark-gold: #FFD700;
         }
 
-        /* PHONE & IPAD SMOOTHNESS FIXES */
         html, body {
             overscroll-behavior-y: none;
             width: 100%;
-            height: 100dvh; /* Dynamic viewport height for mobile */
+            height: 100dvh; 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--dark); color: var(--light); margin: 0; padding: 0;
             display: flex; flex-direction: column;
@@ -30,7 +29,6 @@
 
         #app-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* TABLET & DESKTOP LOGIC */
         @media (min-width: 768px) {
             #app-container { flex-direction: row; }
             #viewport-section { flex: 3; border-right: 1px solid #333; display: flex; flex-direction: column; position: relative; }
@@ -40,7 +38,6 @@
             nav#mobile-nav { display: none !important; }
         }
 
-        /* MOBILE SIDE PANEL SCROLL FIX */
         @media (max-width: 767px) {
             .side-panel {
                 flex: 1;
@@ -63,7 +60,6 @@
         #board-wrapper { position: absolute; width: 100%; transform-origin: 0 0; will-change: transform; pointer-events: all; }
         #board-image { width: 100%; display: block; pointer-events: none; -webkit-user-drag: none; }
 
-        /* Markers */
         .hold-marker {
             position: absolute; width: 18px; height: 18px; border-radius: 50%;
             transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center;
@@ -76,7 +72,6 @@
         .hold-marker.type-foot { background-color: var(--foot-color); width: 12px; height: 12px; opacity: 0.6; }
         .hold-marker.type-finish { background-color: var(--finish-color); border: 2px dashed rgba(255,255,255,0.8); }
 
-        /* UI Styling */
         .controls { padding: 20px; background: var(--dark); }
         .marker-toolbar { display: flex; gap: 5px; margin-bottom: 15px; background: #000; padding: 5px; border-radius: 8px; }
         .type-btn { flex: 1; padding: 12px 0; text-align: center; font-size: 0.8rem; color: #666; cursor: pointer; user-select: none; }
@@ -180,10 +175,16 @@
             <div class="filter-bar" style="padding:15px; background:#111; border-bottom:1px solid #333; display: flex; flex-direction: column; gap: 8px;">
                 <input type="text" id="filter-search" placeholder="Search..." oninput="renderLogbook()" style="margin:0;">
                 <div style="display: flex; gap: 5px;">
-                    <select id="filter-grade" onchange="renderLogbook()" style="margin:0; font-size: 12px; padding: 8px; flex: 1.5;">
+                    <select id="filter-grade" onchange="renderLogbook()" style="margin:0; font-size: 12px; padding: 8px; flex: 1;">
                         <option value="">All Grades</option>
                     </select>
-                    <button id="btn-filter-bm" onclick="toggleBMFilter()" style="flex: 1; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 8px; font-size: 11px;">BM Only</button>
+                    <select id="filter-rating" onchange="renderLogbook()" style="margin:0; font-size: 12px; padding: 8px; flex: 1;">
+                        <option value="all">All Stars</option>
+                        <option value="3">★★★</option>
+                        <option value="2">★★☆ & Up</option>
+                        <option value="1">★☆☆ & Up</option>
+                    </select>
+                    <button id="btn-filter-bm" onclick="toggleBMFilter()" style="flex: 0.8; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 8px; font-size: 11px;">BM Only</button>
                 </div>
             </div>
             <div id="routes-list" style="overflow-y:auto; flex:1;"></div>
@@ -202,7 +203,7 @@
         let currentHoldType = 'start';
         let scale = 1, pointX = 0, pointY = 0, start = { x: 0, y: 0 }, startPos = { x: 0, y: 0 }, evCache = [], prevDiff = -1, isDragging = false, touchStartTime = 0;
         let bmFilterActive = false;
-        const moveThreshold = 8; // Pixel threshold to distinguish tap from drag
+        const moveThreshold = 8; 
 
         const boardWrapper = document.getElementById('board-wrapper');
         const boardImage = document.getElementById('board-image');
@@ -217,7 +218,6 @@
             reader.readAsDataURL(e.target.files[0]);
         };
 
-        // REFINED MOBILE TOUCH HANDLING
         viewport.addEventListener('pointerdown', (e) => {
             evCache.push(e);
             start = { x: e.clientX - pointX, y: e.clientY - pointY };
@@ -247,7 +247,6 @@
         });
 
         viewport.addEventListener('pointerup', (e) => {
-            // Logic for placing a hold (Tap)
             if (!isDragging && evCache.length === 1 && (Date.now() - touchStartTime) < 300) {
                 const rect = boardWrapper.getBoundingClientRect();
                 const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -256,13 +255,10 @@
                 let order = currentHoldType === 'foot' ? 0 : currentMoves.filter(m => m.type !== 'foot').length + 1;
                 currentMoves.push({ x, y, type: currentHoldType, order });
                 
-                // Auto-advance logic
                 if (currentHoldType === 'start' && currentMoves.filter(m => m.type === 'start').length >= 2) {
                     setHoldType('hand');
                 } else if (currentHoldType === 'start') {
-                    // Stay on start for second hold if only one exists
-                } else if (currentHoldType === 'finish') {
-                    // stay on finish
+                    // stays on start
                 }
                 renderMarkers();
             }
@@ -330,12 +326,14 @@
             const container = document.getElementById('routes-list');
             const search = document.getElementById('filter-search').value.toLowerCase();
             const grade = document.getElementById('filter-grade').value;
+            const minRating = document.getElementById('filter-rating').value;
 
             const filtered = savedRoutes.filter(r => {
                 const matchSearch = r.name.toLowerCase().includes(search);
                 const matchGrade = !grade || r.grade === grade;
                 const matchBM = !bmFilterActive || r.isBenchmark;
-                return matchSearch && matchGrade && matchBM;
+                const matchRating = minRating === 'all' || (r.rating || 0) >= parseInt(minRating);
+                return matchSearch && matchGrade && matchBM && matchRating;
             });
 
             container.innerHTML = '';
@@ -374,7 +372,6 @@
             document.getElementById('create-view').classList.toggle('active-panel', t === 'create');
             document.getElementById('list-view').classList.toggle('active-panel', t === 'list');
             
-            // UI Button Active States
             const mobileCreate = document.getElementById('nav-create');
             const mobileList = document.getElementById('nav-list');
             if(mobileCreate) mobileCreate.classList.toggle('active', t === 'create');
@@ -393,7 +390,6 @@
         function clearMoves() { currentMoves = []; renderMarkers(); }
         function clearData() { if(confirm("Reset all data? This cannot be undone.")) { localStorage.clear(); location.reload(); } }
 
-        // Initial setup
         renderLogbook(); 
         populateGrades();
         if (window.innerWidth < 768) switchTab('create');
