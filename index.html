@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Home Board Log Pro</title>
     <style>
         :root {
@@ -11,10 +11,15 @@
             --light: #f4f4f4; --accent: #00BCD4; --benchmark-gold: #FFD700;
         }
 
-        body {
+        /* PHONE & IPAD SMOOTHNESS FIXES */
+        html, body {
+            overscroll-behavior-y: none;
+            position: fixed;
+            width: 100%;
+            height: 100%;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--dark); color: var(--light); margin: 0; padding: 0;
-            display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+            display: flex; flex-direction: column;
         }
 
         header {
@@ -24,12 +29,13 @@
 
         #app-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
+        /* TABLET & DESKTOP LOGIC (Breakpoint adjusted to 768px to catch iPad Landscape) */
         @media (min-width: 768px) {
             #app-container { flex-direction: row; }
             #viewport-section { flex: 3; border-right: 1px solid #333; display: flex; flex-direction: column; position: relative; }
             .side-panel { width: 400px; overflow-y: auto; background: #1a1a1a; display: none; flex-direction: column; }
             .side-panel.active-panel { display: flex; }
-            #desktop-nav { display: flex !important; gap: 10px; }
+            #desktop-nav { display: flex !important; gap: 8px; align-items: center; }
             nav#mobile-nav { display: none !important; }
         }
 
@@ -38,11 +44,13 @@
         #viewport {
             width: 100%; height: 100%; min-height: 40vh; overflow: hidden; background: #000;
             position: relative; touch-action: none; cursor: crosshair;
+            -webkit-user-select: none;
         }
 
         #board-wrapper { position: absolute; width: 100%; transform-origin: 0 0; will-change: transform; pointer-events: all; }
         #board-image { width: 100%; display: block; pointer-events: none; -webkit-user-drag: none; }
 
+        /* Markers */
         .hold-marker {
             position: absolute; width: 18px; height: 18px; border-radius: 50%;
             transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center;
@@ -55,7 +63,8 @@
         .hold-marker.type-foot { background-color: var(--foot-color); width: 12px; height: 12px; opacity: 0.5; }
         .hold-marker.type-finish { background-color: var(--finish-color); border: 2px dashed rgba(255,255,255,0.8); }
 
-        .controls { padding: 20px; background: var(--dark); overflow-y: auto; }
+        /* UI Styling */
+        .controls { padding: 20px; background: var(--dark); }
         .marker-toolbar { display: flex; gap: 5px; margin-bottom: 15px; background: #000; padding: 5px; border-radius: 8px; }
         .type-btn { flex: 1; padding: 12px 0; text-align: center; font-size: 0.8rem; color: #666; cursor: pointer; user-select: none; }
         .type-btn.active { color: white; background: #333; border-radius: 4px; font-weight: bold; }
@@ -68,20 +77,21 @@
         .btn { padding: 14px; border: none; border-radius: 8px; font-weight: bold; width: 100%; margin-bottom: 10px; cursor: pointer; }
         .btn-primary { background-color: var(--accent); color: white; }
         .btn-secondary { background-color: #444; color: white; }
-        .btn-toggle { background: #333; color: #aaa; border: 1px solid #444; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+        .btn-toggle { background: #222; color: #777; border: 1px solid #444; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; }
         .btn-toggle.active { background: var(--accent); color: white; border-color: var(--accent); }
         
-        .route-card { background: var(--card-bg); margin: 10px; padding: 15px; border-radius: 10px; border-left: 5px solid var(--accent); cursor: pointer; position: relative;}
+        .route-card { background: var(--card-bg); margin: 10px; padding: 15px; border-radius: 10px; border-left: 5px solid var(--accent); cursor: pointer; position: relative; }
         .route-card.benchmark { border-left-color: var(--benchmark-gold); }
         
-        .ascent-tag { background: #444; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 9px; margin-right: 4px; display: inline-block; margin-top: 4px;}
-        .log-ascent-btn { position: absolute; bottom: 15px; right: 15px; background: #333; color: var(--accent); border: 1px solid var(--accent); font-size: 10px; padding: 4px 8px; border-radius: 4px; cursor: pointer;}
+        .ascent-tag { background: #444; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 9px; margin-right: 4px; display: inline-block; margin-top: 4px; }
+        .log-ascent-btn { position: absolute; bottom: 15px; right: 15px; background: #333; color: var(--accent); border: 1px solid var(--accent); font-size: 10px; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
 
-        nav#mobile-nav { display: flex; background: #111; border-top: 1px solid #333; height: 65px; }
+        nav#mobile-nav { display: flex; background: #111; border-top: 1px solid #333; height: 65px; padding-bottom: env(safe-area-inset-bottom); }
         .nav-item { flex: 1; text-align: center; padding: 20px; color: #777; font-size: 0.9rem; font-weight: bold; cursor: pointer; }
         .nav-item.active { color: var(--accent); border-top: 3px solid var(--accent); }
 
         #setup-screen { position: fixed; inset: 0; background: var(--dark); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        * { -webkit-tap-highlight-color: transparent; }
     </style>
 </head>
 <body>
@@ -94,14 +104,14 @@
     </div>
 
     <header>
-        <div style="display:flex; align-items:center; gap:15px;">
-            <h1 style="margin:0; font-size: 1.2rem;">🧗 Board Log</h1>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <h1 style="margin:0; font-size: 1rem;">🧗 Board Log</h1>
             <div id="desktop-nav">
                 <button id="toggle-create" class="btn-toggle active" onclick="switchTab('create')">SETTER</button>
                 <button id="toggle-list" class="btn-toggle" onclick="switchTab('list')">LOGBOOK</button>
             </div>
         </div>
-        <button onclick="clearData()" style="color:#555; background:none; border:1px solid #333; padding: 4px 10px; border-radius:4px; font-size:10px; cursor:pointer;">RESET APP</button>
+        <button onclick="clearData()" style="color:#555; background:none; border:1px solid #333; padding: 4px 10px; border-radius:4px; font-size:10px; cursor:pointer;">RESET</button>
     </header>
 
     <div id="app-container">
@@ -113,14 +123,14 @@
                 </div>
             </div>
             <div style="background:#222; padding:10px 20px; font-size:0.7rem; color:var(--accent); display:flex; justify-content:space-between; align-items:center;">
-                <span>Pinch/Scroll to Zoom • Drag to Move</span>
-                <button onclick="resetZoom(event)" style="background:none; border:1px solid #555; color:#aaa; font-size:10px; padding:4px 10px; border-radius:4px; cursor:pointer;">RESET VIEW</button>
+                <span>Pinch to Zoom • Drag to Move</span>
+                <button onclick="resetZoom(event)" style="background:none; border:1px solid #555; color:#aaa; font-size:10px; padding:4px 10px; border-radius:4px;">RESET VIEW</button>
             </div>
         </div>
 
         <div id="create-view" class="side-panel active-panel">
             <div class="controls">
-                <h3 style="margin-top:0;">Route Details</h3>
+                <h3 style="margin-top:0;">New Route</h3>
                 <div class="marker-toolbar">
                     <div class="type-btn active" onclick="setHoldType('start', event)" data-type="start">Start</div>
                     <div class="type-btn" onclick="setHoldType('hand', event)" data-type="hand">Hand</div>
@@ -129,8 +139,8 @@
                 </div>
 
                 <div style="display:flex; gap:10px; margin-bottom: 10px;">
-                    <button class="btn btn-secondary" style="flex:1" onclick="undoLastMove(event)">Undo</button>
-                    <button class="btn btn-secondary" style="flex:1" onclick="clearMoves(event)">Clear</button>
+                    <button class="btn btn-secondary" style="flex:1" onclick="undoLastMove()">Undo</button>
+                    <button class="btn btn-secondary" style="flex:1" onclick="clearMoves()">Clear</button>
                 </div>
 
                 <input type="text" id="route-name" placeholder="Route Name">
@@ -143,32 +153,24 @@
                         <option value="3">★★★</option>
                     </select>
                 </div>
-                
                 <input type="text" id="route-setter" placeholder="Setter Name">
-                
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
                     <input type="checkbox" id="route-benchmark" style="width:auto; margin:0;">
                     <label>Benchmark</label>
                 </div>
                 <textarea id="route-notes" rows="2" placeholder="Notes..."></textarea>
-                <button id="save-btn" class="btn btn-primary" onclick="saveRoute(event)">Save Route</button>
+                <button id="save-btn" class="btn btn-primary" onclick="saveRoute()">Save Route</button>
             </div>
         </div>
 
         <div id="list-view" class="side-panel">
             <div class="filter-bar" style="padding:15px; background:#111; border-bottom:1px solid #333; display: flex; flex-direction: column; gap: 8px;">
-                <input type="text" id="filter-search" placeholder="Search by name..." oninput="renderLogbook()" style="margin:0;">
+                <input type="text" id="filter-search" placeholder="Search..." oninput="renderLogbook()" style="margin:0;">
                 <div style="display: flex; gap: 5px;">
                     <select id="filter-grade" onchange="renderLogbook()" style="margin:0; font-size: 12px; padding: 8px; flex: 1.5;">
                         <option value="">All Grades</option>
                     </select>
-                    <select id="filter-rating" onchange="renderLogbook()" style="margin:0; font-size: 12px; padding: 8px; flex: 1;">
-                        <option value="0">All Stars</option>
-                        <option value="1">★+</option>
-                        <option value="2">★★+</option>
-                        <option value="3">★★★</option>
-                    </select>
-                    <button id="btn-filter-bm" onclick="toggleBMFilter()" style="flex: 1; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 8px; font-size: 11px; cursor: pointer;">BM Only</button>
+                    <button id="btn-filter-bm" onclick="toggleBMFilter()" style="flex: 1; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 8px; font-size: 11px;">BM Only</button>
                 </div>
             </div>
             <div id="routes-list" style="overflow-y:auto; flex:1;"></div>
@@ -197,27 +199,38 @@
 
         document.getElementById('imgInput').onchange = (e) => {
             const reader = new FileReader();
-            reader.onload = () => {
-                localStorage.setItem('boardImage', reader.result);
-                location.reload();
-            };
+            reader.onload = () => { localStorage.setItem('boardImage', reader.result); location.reload(); };
             reader.readAsDataURL(e.target.files[0]);
         };
 
-        viewport.onwheel = (e) => { e.preventDefault(); scale = Math.min(Math.max(1, scale + (e.deltaY > 0 ? -0.1 : 0.1)), 5); updateTransform(); };
-        viewport.onpointerdown = (e) => { evCache.push(e); start = { x: e.clientX - pointX, y: e.clientY - pointY }; isDragging = false; };
-        viewport.onpointermove = (e) => {
-            isDragging = true;
-            for (let i = 0; i < evCache.length; i++) { if (e.pointerId == evCache[i].pointerId) { evCache[i] = e; break; } }
-            if (evCache.length == 2) {
+        // ENHANCED MOBILE TOUCH HANDLING
+        viewport.addEventListener('pointerdown', (e) => {
+            evCache.push(e);
+            start = { x: e.clientX - pointX, y: e.clientY - pointY };
+            isDragging = false;
+        });
+
+        viewport.addEventListener('pointermove', (e) => {
+            const index = evCache.findIndex(ev => ev.pointerId === e.pointerId);
+            if (index > -1) evCache[index] = e;
+
+            if (evCache.length === 2) {
+                isDragging = true;
                 const curDiff = Math.hypot(evCache[0].clientX - evCache[1].clientX, evCache[0].clientY - evCache[1].clientY);
-                if (prevDiff > 0) scale = Math.min(Math.max(1, scale + (curDiff > prevDiff ? 0.05 : -0.05)), 5);
+                if (prevDiff > 0) scale = Math.min(Math.max(1, scale + (curDiff - prevDiff) * 0.01), 5);
                 prevDiff = curDiff;
-            } else if (evCache.length == 1) { pointX = e.clientX - start.x; pointY = e.clientY - start.y; }
+            } else if (evCache.length === 1) {
+                if (Math.abs(e.clientX - (start.x + pointX)) > 5 || Math.abs(e.clientY - (start.y + pointY)) > 5) {
+                    isDragging = true;
+                    pointX = e.clientX - start.x;
+                    pointY = e.clientY - start.y;
+                }
+            }
             updateTransform();
-        };
-        viewport.onpointerup = (e) => {
-            if (!isDragging) {
+        });
+
+        viewport.addEventListener('pointerup', (e) => {
+            if (!isDragging && evCache.length === 1) {
                 const rect = boardWrapper.getBoundingClientRect();
                 const x = ((e.clientX - rect.left) / rect.width) * 100;
                 const y = ((e.clientY - rect.top) / rect.height) * 100;
@@ -228,9 +241,12 @@
             }
             evCache = evCache.filter(ev => ev.pointerId !== e.pointerId);
             if (evCache.length < 2) prevDiff = -1;
-        };
+        });
 
-        function updateTransform() { boardWrapper.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`; }
+        function updateTransform() {
+            boardWrapper.style.transform = `translate3d(${pointX}px, ${pointY}px, 0) scale(${scale})`;
+        }
+
         function resetZoom() { scale = 1; pointX = 0; pointY = 0; updateTransform(); }
 
         function renderMarkers() {
@@ -239,18 +255,19 @@
             `).join('');
         }
 
-        function setHoldType(t, e) { if(e) e.stopPropagation(); currentHoldType = t; document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === t)); }
-        
+        function setHoldType(t, e) {
+            if(e) e.stopPropagation();
+            currentHoldType = t;
+            document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === t));
+        }
+
         function saveRoute() {
             const name = document.getElementById('route-name').value;
             if (!name) return alert("Name required");
             savedRoutes.unshift({ 
-                id: Date.now(), 
-                name, 
-                grade: document.getElementById('route-grade').value || "?", 
+                id: Date.now(), name, grade: document.getElementById('route-grade').value || "?", 
                 setter: document.getElementById('route-setter').value || "Unknown",
-                ascents: [], 
-                moves: [...currentMoves], 
+                ascents: [], moves: [...currentMoves], 
                 rating: parseInt(document.getElementById('route-rating').value), 
                 isBenchmark: document.getElementById('route-benchmark').checked 
             });
@@ -262,10 +279,10 @@
             event.stopPropagation();
             const name = prompt("Enter climber's name:");
             if (name) {
-                const routeIndex = savedRoutes.findIndex(r => r.id === id);
-                if (routeIndex > -1) {
-                    if (!savedRoutes[routeIndex].ascents) savedRoutes[routeIndex].ascents = [];
-                    savedRoutes[routeIndex].ascents.push(name);
+                const rIdx = savedRoutes.findIndex(r => r.id === id);
+                if (rIdx > -1) {
+                    if(!savedRoutes[rIdx].ascents) savedRoutes[rIdx].ascents = [];
+                    savedRoutes[rIdx].ascents.push(name);
                     localStorage.setItem('myRoutes', JSON.stringify(savedRoutes));
                     renderLogbook();
                 }
@@ -274,9 +291,7 @@
 
         function toggleBMFilter() {
             bmFilterActive = !bmFilterActive;
-            const btn = document.getElementById('btn-filter-bm');
-            btn.style.borderColor = bmFilterActive ? 'var(--benchmark-gold)' : '#444';
-            btn.style.color = bmFilterActive ? 'var(--benchmark-gold)' : 'white';
+            document.getElementById('btn-filter-bm').style.borderColor = bmFilterActive ? 'var(--benchmark-gold)' : '#444';
             renderLogbook();
         }
 
@@ -284,39 +299,28 @@
             const container = document.getElementById('routes-list');
             const search = document.getElementById('filter-search').value.toLowerCase();
             const grade = document.getElementById('filter-grade').value;
-            const rating = parseInt(document.getElementById('filter-rating').value);
 
             const filtered = savedRoutes.filter(r => {
                 const matchSearch = r.name.toLowerCase().includes(search);
                 const matchGrade = !grade || r.grade === grade;
-                const matchRating = r.rating >= rating;
                 const matchBM = !bmFilterActive || r.isBenchmark;
-                return matchSearch && matchGrade && matchRating && matchBM;
+                return matchSearch && matchGrade && matchBM;
             });
 
             container.innerHTML = '';
             filtered.forEach(r => {
                 const card = document.createElement('div');
                 card.className = `route-card ${r.isBenchmark ? 'benchmark' : ''}`;
-                card.onclick = () => { 
-                    currentMoves = r.moves; 
-                    renderMarkers(); 
-                    if(window.innerWidth < 768) switchTab('create'); 
-                    resetZoom(); 
-                };
+                card.onclick = () => { currentMoves = r.moves; renderMarkers(); if(window.innerWidth < 768) switchTab('create'); resetZoom(); };
                 const stars = "★".repeat(r.rating) + "☆".repeat(3 - r.rating);
-                const ascentHtml = (r.ascents || []).map(name => `<span class="ascent-tag">${name}</span>`).join('');
-
+                const ascTags = (r.ascents || []).map(n => `<span class="ascent-tag">${n}</span>`).join('');
                 card.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items: flex-start; margin-bottom: 5px;">
-                        <div>
-                            <strong>${r.name}</strong>
-                            <div style="font-size:10px; color:#aaa; margin-top:2px;">Set by: ${r.setter}</div>
-                        </div>
-                        <span style="font-weight:bold; color:var(--accent);">${r.grade}</span>
+                    <div style="display:flex; justify-content:space-between;">
+                        <div><strong>${r.name}</strong><div style="font-size:9px; color:#777;">by ${r.setter}</div></div>
+                        <span style="color:var(--accent); font-weight:bold;">${r.grade}</span>
                     </div>
-                    <div style="font-size:10px; color:#888;">${stars}</div>
-                    <div style="margin-top:5px;">${ascentHtml}</div>
+                    <div style="font-size:10px; color:#555; margin-top:4px;">${stars}</div>
+                    <div>${ascTags}</div>
                     <button class="log-ascent-btn" onclick="logAscent(${r.id}, event)">+ LOG</button>
                 `;
                 container.appendChild(card);
@@ -325,11 +329,8 @@
 
         function populateGrades() {
             const select = document.getElementById('filter-grade');
-            const uniqueGrades = [...new Set(savedRoutes.map(r => r.grade))].sort();
-            uniqueGrades.forEach(g => {
-                const opt = document.createElement('option');
-                opt.value = g; opt.textContent = g;
-                select.appendChild(opt);
+            [...new Set(savedRoutes.map(r => r.grade))].sort().forEach(g => {
+                const opt = document.createElement('option'); opt.value = g; opt.textContent = g; select.appendChild(opt);
             });
         }
 
@@ -351,8 +352,7 @@
         function clearMoves() { currentMoves = []; renderMarkers(); }
         function clearData() { if(confirm("Reset all?")) { localStorage.clear(); location.reload(); } }
 
-        renderLogbook();
-        populateGrades();
+        renderLogbook(); populateGrades();
     </script>
 </body>
 </html>
