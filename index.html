@@ -92,7 +92,7 @@
         .route-card.benchmark { border-left-color: var(--benchmark-gold); }
         
         .ascent-tag { background: #444; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 9px; margin-right: 4px; display: inline-block; margin-top: 4px; }
-        .log-ascent-btn { position: absolute; bottom: 15px; right: 15px; background: #333; color: var(--accent); border: 1px solid var(--accent); font-size: 10px; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
+        .log-ascent-btn { background: #333; color: var(--accent); border: 1px solid var(--accent); font-size: 10px; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
 
         nav#mobile-nav { display: flex; background: #111; border-top: 1px solid #333; height: 65px; padding-bottom: env(safe-area-inset-bottom); }
         .nav-item { flex: 1; text-align: center; padding: 20px; color: #777; font-size: 0.9rem; font-weight: bold; cursor: pointer; }
@@ -257,8 +257,6 @@
                 
                 if (currentHoldType === 'start' && currentMoves.filter(m => m.type === 'start').length >= 2) {
                     setHoldType('hand');
-                } else if (currentHoldType === 'start') {
-                    // stays on start
                 }
                 renderMarkers();
             }
@@ -290,13 +288,15 @@
 
         function saveRoute() {
             const name = document.getElementById('route-name').value;
+            const notes = document.getElementById('route-notes').value;
             if (!name) return alert("Name required");
             savedRoutes.unshift({ 
                 id: Date.now(), name, grade: document.getElementById('route-grade').value || "?", 
                 setter: document.getElementById('route-setter').value || "Unknown",
                 ascents: [], moves: [...currentMoves], 
                 rating: parseInt(document.getElementById('route-rating').value), 
-                isBenchmark: document.getElementById('route-benchmark').checked 
+                isBenchmark: document.getElementById('route-benchmark').checked,
+                notes: notes // Save notes data
             });
             localStorage.setItem('myRoutes', JSON.stringify(savedRoutes));
             location.reload();
@@ -348,6 +348,10 @@
                 };
                 const stars = "★".repeat(r.rating) + "☆".repeat(3 - r.rating);
                 const ascTags = (r.ascents || []).map(n => `<span class="ascent-tag">${n}</span>`).join('');
+                
+                // Display notes if they exist
+                const notesHtml = r.notes ? `<div style="font-size: 11px; color: #aaa; margin-top: 8px; font-style: italic; border-top: 1px solid #3d3d3d; padding-top: 5px;">${r.notes}</div>` : '';
+
                 card.innerHTML = `
                     <div style="display:flex; justify-content:space-between;">
                         <div><strong>${r.name}</strong><div style="font-size:9px; color:#777;">by ${r.setter}</div></div>
@@ -355,7 +359,10 @@
                     </div>
                     <div style="font-size:10px; color:#555; margin-top:4px;">${stars}</div>
                     <div>${ascTags}</div>
-                    <button class="log-ascent-btn" onclick="logAscent(${r.id}, event)">+ LOG</button>
+                    ${notesHtml}
+                    <div style="margin-top:10px; display:flex; justify-content:flex-end;">
+                        <button class="log-ascent-btn" onclick="logAscent(${r.id}, event)">+ LOG</button>
+                    </div>
                 `;
                 container.appendChild(card);
             });
