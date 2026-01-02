@@ -6,333 +6,353 @@
     <title>Home Board Log Pro</title>
     <style>
         :root {
-            --start-color: #4CAF50;
-            --hand-color: #FF9800;
-            --foot-color: #2196F3;
-            --finish-color: #F44336;
-            --dark: #1a1a1a;
-            --card-bg: #2a2a2a;
-            --light: #f4f4f4;
-            --accent: #00BCD4;
-            --benchmark-gold: #FFD700;
+            --start-color: #4CAF50; --hand-color: #FF9800; --foot-color: #2196F3;
+            --finish-color: #F44336; --dark: #1a1a1a; --card-bg: #2a2a2a;
+            --light: #f4f4f4; --accent: #00BCD4; --benchmark-gold: #FFD700;
         }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--dark);
-            color: var(--light);
-            margin: 0; padding: 0;
-            display: flex; flex-direction: column;
-            height: 100vh; overflow: hidden;
+            background-color: var(--dark); color: var(--light); margin: 0; padding: 0;
+            display: flex; flex-direction: column; height: 100vh; overflow: hidden;
         }
 
         header {
-            padding: 10px 15px; background: #111;
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid #333; z-index: 10;
+            padding: 10px 20px; background: #111; display: flex;
+            justify-content: space-between; align-items: center; border-bottom: 1px solid #333; z-index: 10;
         }
 
-        #app-container { flex: 1; overflow-y: auto; position: relative; display: flex; flex-direction: column; }
+        #app-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* --- Viewport & Zoom --- */
+        @media (min-width: 768px) {
+            #app-container { flex-direction: row; }
+            #viewport-section { flex: 3; border-right: 1px solid #333; display: flex; flex-direction: column; position: relative; }
+            .side-panel { width: 400px; overflow-y: auto; background: #1a1a1a; display: none; flex-direction: column; }
+            .side-panel.active-panel { display: flex; }
+            #desktop-nav { display: flex !important; gap: 10px; }
+            nav#mobile-nav { display: none !important; }
+        }
+
+        #desktop-nav { display: none; }
+
         #viewport {
-            width: 100%; height: 45vh;
-            overflow: hidden; background: #000;
-            position: relative; touch-action: none; cursor: grab;
-        }
-        #viewport:active { cursor: grabbing; }
-
-        #board-wrapper {
-            position: absolute; width: 100%;
-            transform-origin: 0 0; will-change: transform;
-            transition: transform 0.05s linear;
+            width: 100%; height: 100%; min-height: 40vh; overflow: hidden; background: #000;
+            position: relative; touch-action: none; cursor: crosshair;
         }
 
-        #board-image { width: 100%; display: block; pointer-events: none; }
+        #board-wrapper { position: absolute; width: 100%; transform-origin: 0 0; will-change: transform; pointer-events: all; }
+        #board-image { width: 100%; display: block; pointer-events: none; -webkit-user-drag: none; }
 
         .hold-marker {
-            position: absolute; width: 22px; height: 22px;
-            border-radius: 50%; transform: translate(-50%, -50%);
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold; font-size: 10px; pointer-events: none;
-            border: 1.5px solid white; color: white; z-index: 5;
+            position: absolute; width: 18px; height: 18px; border-radius: 50%;
+            transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 10px; pointer-events: none; border: 1.5px solid rgba(255,255,255,0.7); 
+            color: white; text-shadow: 0 0 3px rgba(0,0,0,0.8); box-shadow: 0 0 5px rgba(0,0,0,0.3);
+            opacity: 0.7;
         }
         .hold-marker.type-start { background-color: var(--start-color); }
         .hold-marker.type-hand { background-color: var(--hand-color); }
-        .hold-marker.type-foot { background-color: var(--foot-color); width: 16px; height: 16px; }
-        .hold-marker.type-finish { background-color: var(--finish-color); border: 2px dashed white; }
+        .hold-marker.type-foot { background-color: var(--foot-color); width: 12px; height: 12px; opacity: 0.5; }
+        .hold-marker.type-finish { background-color: var(--finish-color); border: 2px dashed rgba(255,255,255,0.8); }
 
-        /* --- Controls --- */
-        .controls { padding: 15px; background: var(--dark); overflow-y: auto; }
-        .zoom-control-bar {
-            background: #222; padding: 10px 15px;
-            display: flex; align-items: center; gap: 15px;
-            border-bottom: 1px solid #333;
-        }
-        .zoom-slider { flex: 1; accent-color: var(--accent); }
-
-        .marker-toolbar {
-            display: flex; justify-content: space-between;
-            margin-bottom: 10px; background: #000;
-            padding: 5px; border-radius: 8px;
-        }
-        .type-btn { flex: 1; padding: 12px 0; text-align: center; font-size: 0.8rem; color: #666; cursor: pointer; }
+        .controls { padding: 20px; background: var(--dark); overflow-y: auto; }
+        .marker-toolbar { display: flex; gap: 5px; margin-bottom: 15px; background: #000; padding: 5px; border-radius: 8px; }
+        .type-btn { flex: 1; padding: 12px 0; text-align: center; font-size: 0.8rem; color: #666; cursor: pointer; user-select: none; }
         .type-btn.active { color: white; background: #333; border-radius: 4px; font-weight: bold; }
 
         input, select, textarea {
-            width: 100%; padding: 12px; margin-bottom: 10px;
-            background: #2a2a2a; border: 1px solid #444; color: white;
-            border-radius: 6px; font-size: 16px; box-sizing: border-box;
+            width: 100%; padding: 12px; margin-bottom: 12px; background: #2a2a2a; 
+            border: 1px solid #444; color: white; border-radius: 8px; font-size: 16px; box-sizing: border-box;
         }
 
-        .btn { padding: 12px; border: none; border-radius: 6px; font-weight: bold; width: 100%; margin-bottom: 8px; cursor: pointer; }
+        .btn { padding: 14px; border: none; border-radius: 8px; font-weight: bold; width: 100%; margin-bottom: 10px; cursor: pointer; }
         .btn-primary { background-color: var(--accent); color: white; }
         .btn-secondary { background-color: #444; color: white; }
-        .btn-update { background-color: #FF9800; color: white; }
-
-        /* --- LANDSCAPE OPTIMIZATION --- */
-        @media (orientation: landscape) and (min-width: 768px) {
-            #app-container { flex-direction: row; }
-            #create-view { display: flex !important; flex-direction: row; width: 100%; }
-            #viewport { flex: 2; height: 100% !important; border-right: 1px solid #333; }
-            .controls { flex: 1; height: 100%; }
-            .zoom-control-bar { position: absolute; bottom: 20px; left: 20px; width: 300px; z-index: 10; border-radius: 8px; border: 1px solid #444; }
-            #list-view .filter-bar { position: sticky; top: 0; width: 100%; }
-            #routes-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; }
-        }
-
-        .filter-bar { background: #111; padding: 10px; display: flex; gap: 5px; position: sticky; top: 0; z-index: 5; }
-        .route-card { background: var(--card-bg); margin: 10px; padding: 15px; border-radius: 8px; border-left: 4px solid var(--accent); }
+        .btn-toggle { background: #333; color: #aaa; border: 1px solid #444; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+        .btn-toggle.active { background: var(--accent); color: white; border-color: var(--accent); }
+        
+        .route-card { background: var(--card-bg); margin: 10px; padding: 15px; border-radius: 10px; border-left: 5px solid var(--accent); cursor: pointer; position: relative;}
         .route-card.benchmark { border-left-color: var(--benchmark-gold); }
         
-        nav { display: flex; background: #111; border-top: 1px solid #333; }
-        .nav-item { flex: 1; text-align: center; padding: 15px; color: #777; font-size: 0.8rem; font-weight: bold; cursor: pointer; }
-        .nav-item.active { color: var(--accent); border-top: 2px solid var(--accent); }
+        .ascent-tag { background: #444; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 9px; margin-right: 4px; display: inline-block; margin-top: 4px;}
+        .log-ascent-btn { position: absolute; bottom: 15px; right: 15px; background: #333; color: var(--accent); border: 1px solid var(--accent); font-size: 10px; padding: 4px 8px; border-radius: 4px; cursor: pointer;}
+
+        nav#mobile-nav { display: flex; background: #111; border-top: 1px solid #333; height: 65px; }
+        .nav-item { flex: 1; text-align: center; padding: 20px; color: #777; font-size: 0.9rem; font-weight: bold; cursor: pointer; }
+        .nav-item.active { color: var(--accent); border-top: 3px solid var(--accent); }
+
+        #setup-screen { position: fixed; inset: 0; background: var(--dark); z-index: 1000; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
 
+    <div id="setup-screen" style="display:none;">
+        <div style="text-align:center; background:var(--card-bg); padding:40px; border-radius:20px; border:1px solid #444;">
+            <h2>Upload Board</h2>
+            <input type="file" id="imgInput" accept="image/*">
+        </div>
+    </div>
+
     <header>
-        <h1>🧗 Home Board Log</h1>
-        <button onclick="clearData()" style="color:#555; background:none; border:none; font-size:10px;">RESET ALL</button>
+        <div style="display:flex; align-items:center; gap:15px;">
+            <h1 style="margin:0; font-size: 1.2rem;">🧗 Board Log</h1>
+            <div id="desktop-nav">
+                <button id="toggle-create" class="btn-toggle active" onclick="switchTab('create')">SETTER</button>
+                <button id="toggle-list" class="btn-toggle" onclick="switchTab('list')">LOGBOOK</button>
+            </div>
+        </div>
+        <button onclick="clearData()" style="color:#555; background:none; border:1px solid #333; padding: 4px 10px; border-radius:4px; font-size:10px; cursor:pointer;">RESET APP</button>
     </header>
 
     <div id="app-container">
-        <div id="setup-screen" style="padding:50px; text-align:center; width: 100%;">
-            <h2>Upload Board Photo</h2>
-            <input type="file" id="imgInput" accept="image/*">
-        </div>
-
-        <div id="create-view" style="display:none; width: 100%;">
+        <div id="viewport-section">
             <div id="viewport">
                 <div id="board-wrapper">
                     <img id="board-image" src="" alt="Board">
                     <div id="markers-container"></div>
                 </div>
             </div>
-            
-            <div class="zoom-control-bar">
-                <input type="range" class="zoom-slider" id="zoomSlider" min="1" max="4" step="0.1" value="1">
-                <button onclick="resetView()" style="background:none; border:1px solid #555; color:#aaa; font-size:10px; padding:4px 8px;">RESET</button>
+            <div style="background:#222; padding:10px 20px; font-size:0.7rem; color:var(--accent); display:flex; justify-content:space-between; align-items:center;">
+                <span>Pinch/Scroll to Zoom • Drag to Move</span>
+                <button onclick="resetZoom(event)" style="background:none; border:1px solid #555; color:#aaa; font-size:10px; padding:4px 10px; border-radius:4px; cursor:pointer;">RESET VIEW</button>
             </div>
+        </div>
 
+        <div id="create-view" class="side-panel active-panel">
             <div class="controls">
+                <h3 style="margin-top:0;">Route Details</h3>
                 <div class="marker-toolbar">
-                    <div class="type-btn active" onclick="setHoldType('start')" data-type="start">Start</div>
-                    <div class="type-btn" onclick="setHoldType('hand')" data-type="hand">Hand</div>
-                    <div class="type-btn" onclick="setHoldType('foot')" data-type="foot">Foot</div>
-                    <div class="type-btn" onclick="setHoldType('finish')" data-type="finish">Finish</div>
+                    <div class="type-btn active" onclick="setHoldType('start', event)" data-type="start">Start</div>
+                    <div class="type-btn" onclick="setHoldType('hand', event)" data-type="hand">Hand</div>
+                    <div class="type-btn" onclick="setHoldType('foot', event)" data-type="foot">Foot</div>
+                    <div class="type-btn" onclick="setHoldType('finish', event)" data-type="finish">Finish</div>
                 </div>
+
                 <div style="display:flex; gap:10px; margin-bottom: 10px;">
-                    <button class="btn btn-secondary" style="flex:1" onclick="undoLastMove()">Undo</button>
-                    <button class="btn btn-secondary" style="flex:1" onclick="clearMoves()">Clear</button>
+                    <button class="btn btn-secondary" style="flex:1" onclick="undoLastMove(event)">Undo</button>
+                    <button class="btn btn-secondary" style="flex:1" onclick="clearMoves(event)">Clear</button>
                 </div>
+
                 <input type="text" id="route-name" placeholder="Route Name">
                 <div style="display:flex; gap:10px;">
                     <input type="text" id="route-grade" placeholder="Grade" style="flex:1;">
-                    <select id="route-rating" style="flex:1.5;">
-                        <option value="0">No Rating</option>
+                    <select id="route-rating" style="flex:1;">
+                        <option value="0">Rating</option>
                         <option value="1">★☆☆</option>
                         <option value="2">★★☆</option>
                         <option value="3">★★★</option>
                     </select>
                 </div>
-                <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; background:#2a2a2a; padding:10px; border-radius:6px;">
+                
+                <input type="text" id="route-setter" placeholder="Setter Name">
+                
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
                     <input type="checkbox" id="route-benchmark" style="width:auto; margin:0;">
-                    <label style="font-size:0.9rem;">Benchmark</label>
+                    <label>Benchmark</label>
                 </div>
                 <textarea id="route-notes" rows="2" placeholder="Notes..."></textarea>
-                <button id="save-btn" class="btn btn-primary" onclick="saveRoute()">Save Route</button>
-                <button id="update-btn" class="btn btn-update" style="display:none;" onclick="updateRoute()">Update Route</button>
-                <button id="cancel-edit-btn" class="btn btn-secondary" style="display:none;" onclick="cancelEdit()">Cancel</button>
+                <button id="save-btn" class="btn btn-primary" onclick="saveRoute(event)">Save Route</button>
             </div>
         </div>
 
-        <div id="list-view" style="display:none; width: 100%;">
-            <div class="filter-bar">
-                <input type="text" id="filter-grade" placeholder="Grade" oninput="renderLogbook()" style="margin:0; flex:1;">
-                <select id="filter-rating" onchange="renderLogbook()" style="margin:0; flex:1;">
-                    <option value="all">Stars</option>
-                    <option value="3">★★★</option>
-                    <option value="2">★★☆+</option>
-                    <option value="1">★☆☆+</option>
-                </select>
+        <div id="list-view" class="side-panel">
+            <div class="filter-bar" style="padding:15px; background:#111; border-bottom:1px solid #333; display: flex; flex-direction: column; gap: 8px;">
+                <input type="text" id="filter-search" placeholder="Search by name..." oninput="renderLogbook()" style="margin:0;">
+                <div style="display: flex; gap: 5px;">
+                    <select id="filter-grade" onchange="renderLogbook()" style="margin:0; font-size: 12px; padding: 8px; flex: 1.5;">
+                        <option value="">All Grades</option>
+                    </select>
+                    <select id="filter-rating" onchange="renderLogbook()" style="margin:0; font-size: 12px; padding: 8px; flex: 1;">
+                        <option value="0">All Stars</option>
+                        <option value="1">★+</option>
+                        <option value="2">★★+</option>
+                        <option value="3">★★★</option>
+                    </select>
+                    <button id="btn-filter-bm" onclick="toggleBMFilter()" style="flex: 1; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 8px; font-size: 11px; cursor: pointer;">BM Only</button>
+                </div>
             </div>
-            <div id="routes-list"></div>
+            <div id="routes-list" style="overflow-y:auto; flex:1;"></div>
         </div>
     </div>
 
-    <nav>
-        <div class="nav-item active" id="nav-create" onclick="switchTab('create')">CREATE</div>
+    <nav id="mobile-nav">
+        <div class="nav-item active" id="nav-create" onclick="switchTab('create')">BOARD</div>
         <div class="nav-item" id="nav-list" onclick="switchTab('list')">LOGBOOK</div>
     </nav>
 
     <script>
         let currentMoves = [];
         let savedRoutes = JSON.parse(localStorage.getItem('myRoutes')) || [];
+        let boardImgData = localStorage.getItem('boardImage');
         let currentHoldType = 'start';
-        let editingRouteId = null;
-        let scale = 1, posX = 0, posY = 0, startX = 0, startY = 0, isDragging = false;
+        let scale = 1, pointX = 0, pointY = 0, start = { x: 0, y: 0 }, evCache = [], prevDiff = -1, isDragging = false;
+        let bmFilterActive = false;
 
-        const viewport = document.getElementById('viewport');
         const boardWrapper = document.getElementById('board-wrapper');
-        const zoomSlider = document.getElementById('zoomSlider');
+        const boardImage = document.getElementById('board-image');
+        const viewport = document.getElementById('viewport');
 
-        // Init App
-        if (localStorage.getItem('boardImage')) {
-            document.getElementById('board-image').src = localStorage.getItem('boardImage');
-            document.getElementById('setup-screen').style.display = 'none';
-            document.getElementById('create-view').style.display = 'block';
-        }
+        if (boardImgData) { boardImage.src = boardImgData; } 
+        else { document.getElementById('setup-screen').style.display = 'flex'; }
 
         document.getElementById('imgInput').onchange = (e) => {
             const reader = new FileReader();
             reader.onload = () => {
-                document.getElementById('board-image').src = reader.result;
                 localStorage.setItem('boardImage', reader.result);
-                document.getElementById('setup-screen').style.display = 'none';
-                document.getElementById('create-view').style.display = 'block';
+                location.reload();
             };
             reader.readAsDataURL(e.target.files[0]);
         };
 
-        // --- Interaction Engine ---
-        zoomSlider.oninput = (e) => { scale = parseFloat(e.target.value); updateTransform(); };
-        viewport.onwheel = (e) => { e.preventDefault(); scale = Math.min(Math.max(1, scale + (e.deltaY > 0 ? -0.1 : 0.1)), 4); zoomSlider.value = scale; updateTransform(); };
-
-        const getXY = (e) => e.type.includes('touch') ? [e.touches[0].clientX, e.touches[0].clientY] : [e.clientX, e.clientY];
-        const startDrag = (e) => { isDragging = true; const [x, y] = getXY(e); startX = x - posX; startY = y - posY; };
-        const moveDrag = (e) => { if (!isDragging) return; const [x, y] = getXY(e); posX = x - startX; posY = y - startY; updateTransform(); };
-        const endDrag = () => { isDragging = false; };
-
-        viewport.addEventListener('mousedown', startDrag);
-        window.addEventListener('mousemove', moveDrag);
-        window.addEventListener('mouseup', endDrag);
-        viewport.addEventListener('touchstart', startDrag);
-        window.addEventListener('touchmove', moveDrag);
-        window.addEventListener('touchend', endDrag);
-
-        boardWrapper.onclick = (e) => {
-            if (isDragging) return;
-            const rect = boardWrapper.getBoundingClientRect();
-            const x = ((e.clientX - rect.left) / rect.width) * 100;
-            const y = ((e.clientY - rect.top) / rect.height) * 100;
-            let order = currentHoldType === 'foot' ? 0 : currentMoves.filter(m => m.type !== 'foot').length + 1;
-            currentMoves.push({ x, y, type: currentHoldType, order });
-            if (currentHoldType === 'start') setHoldType('hand');
-            renderMarkers();
+        viewport.onwheel = (e) => { e.preventDefault(); scale = Math.min(Math.max(1, scale + (e.deltaY > 0 ? -0.1 : 0.1)), 5); updateTransform(); };
+        viewport.onpointerdown = (e) => { evCache.push(e); start = { x: e.clientX - pointX, y: e.clientY - pointY }; isDragging = false; };
+        viewport.onpointermove = (e) => {
+            isDragging = true;
+            for (let i = 0; i < evCache.length; i++) { if (e.pointerId == evCache[i].pointerId) { evCache[i] = e; break; } }
+            if (evCache.length == 2) {
+                const curDiff = Math.hypot(evCache[0].clientX - evCache[1].clientX, evCache[0].clientY - evCache[1].clientY);
+                if (prevDiff > 0) scale = Math.min(Math.max(1, scale + (curDiff > prevDiff ? 0.05 : -0.05)), 5);
+                prevDiff = curDiff;
+            } else if (evCache.length == 1) { pointX = e.clientX - start.x; pointY = e.clientY - start.y; }
+            updateTransform();
+        };
+        viewport.onpointerup = (e) => {
+            if (!isDragging) {
+                const rect = boardWrapper.getBoundingClientRect();
+                const x = ((e.clientX - rect.left) / rect.width) * 100;
+                const y = ((e.clientY - rect.top) / rect.height) * 100;
+                let order = currentHoldType === 'foot' ? 0 : currentMoves.filter(m => m.type !== 'foot').length + 1;
+                currentMoves.push({ x, y, type: currentHoldType, order });
+                if (currentHoldType === 'start') setHoldType('hand');
+                renderMarkers();
+            }
+            evCache = evCache.filter(ev => ev.pointerId !== e.pointerId);
+            if (evCache.length < 2) prevDiff = -1;
         };
 
-        function updateTransform() { boardWrapper.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`; }
-        function resetView() { scale = 1; posX = 0; posY = 0; zoomSlider.value = 1; updateTransform(); }
+        function updateTransform() { boardWrapper.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`; }
+        function resetZoom() { scale = 1; pointX = 0; pointY = 0; updateTransform(); }
 
-        // --- Logic ---
         function renderMarkers() {
-            const container = document.getElementById('markers-container');
-            container.innerHTML = '';
-            currentMoves.forEach(m => {
-                const el = document.createElement('div');
-                el.className = `hold-marker type-${m.type}`;
-                el.style.left = m.x + '%'; el.style.top = m.y + '%';
-                if (m.type !== 'foot') el.innerText = m.order;
-                container.appendChild(el);
-            });
+            document.getElementById('markers-container').innerHTML = currentMoves.map(m => `
+                <div class="hold-marker type-${m.type}" style="left:${m.x}%; top:${m.y}%">${m.type !== 'foot' ? m.order : ''}</div>
+            `).join('');
         }
 
-        function setHoldType(t) {
-            currentHoldType = t;
-            document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === t));
-        }
-
+        function setHoldType(t, e) { if(e) e.stopPropagation(); currentHoldType = t; document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === t)); }
+        
         function saveRoute() {
             const name = document.getElementById('route-name').value;
-            if (!name) return alert("Name required!");
-            savedRoutes.unshift({ id: Date.now(), name, grade: document.getElementById('route-grade').value || "?", rating: parseInt(document.getElementById('route-rating').value), isBenchmark: document.getElementById('route-benchmark').checked, notes: document.getElementById('route-notes').value, moves: [...currentMoves] });
+            if (!name) return alert("Name required");
+            savedRoutes.unshift({ 
+                id: Date.now(), 
+                name, 
+                grade: document.getElementById('route-grade').value || "?", 
+                setter: document.getElementById('route-setter').value || "Unknown",
+                ascents: [], 
+                moves: [...currentMoves], 
+                rating: parseInt(document.getElementById('route-rating').value), 
+                isBenchmark: document.getElementById('route-benchmark').checked 
+            });
             localStorage.setItem('myRoutes', JSON.stringify(savedRoutes));
-            cancelEdit(); switchTab('list');
+            location.reload();
         }
 
-        function editRoute(id) {
-            const r = savedRoutes.find(x => x.id === id);
-            editingRouteId = id;
-            document.getElementById('route-name').value = r.name;
-            document.getElementById('route-grade').value = r.grade;
-            document.getElementById('route-rating').value = r.rating;
-            document.getElementById('route-benchmark').checked = r.isBenchmark;
-            document.getElementById('route-notes').value = r.notes;
-            currentMoves = [...r.moves];
-            document.getElementById('save-btn').style.display = 'none';
-            document.getElementById('update-btn').style.display = 'block';
-            document.getElementById('cancel-edit-btn').style.display = 'block';
-            renderMarkers(); switchTab('create'); resetView();
+        function logAscent(id, event) {
+            event.stopPropagation();
+            const name = prompt("Enter climber's name:");
+            if (name) {
+                const routeIndex = savedRoutes.findIndex(r => r.id === id);
+                if (routeIndex > -1) {
+                    if (!savedRoutes[routeIndex].ascents) savedRoutes[routeIndex].ascents = [];
+                    savedRoutes[routeIndex].ascents.push(name);
+                    localStorage.setItem('myRoutes', JSON.stringify(savedRoutes));
+                    renderLogbook();
+                }
+            }
         }
 
-        function updateRoute() {
-            const idx = savedRoutes.findIndex(r => r.id === editingRouteId);
-            savedRoutes[idx] = { ...savedRoutes[idx], name: document.getElementById('route-name').value, grade: document.getElementById('route-grade').value, rating: parseInt(document.getElementById('route-rating').value), isBenchmark: document.getElementById('route-benchmark').checked, notes: document.getElementById('route-notes').value, moves: [...currentMoves] };
-            localStorage.setItem('myRoutes', JSON.stringify(savedRoutes));
-            cancelEdit(); switchTab('list');
-        }
-
-        function cancelEdit() {
-            editingRouteId = null; currentMoves = []; renderMarkers();
-            document.getElementById('route-name').value = '';
-            document.getElementById('save-btn').style.display = 'block';
-            document.getElementById('update-btn').style.display = 'none';
-            document.getElementById('cancel-edit-btn').style.display = 'none';
+        function toggleBMFilter() {
+            bmFilterActive = !bmFilterActive;
+            const btn = document.getElementById('btn-filter-bm');
+            btn.style.borderColor = bmFilterActive ? 'var(--benchmark-gold)' : '#444';
+            btn.style.color = bmFilterActive ? 'var(--benchmark-gold)' : 'white';
+            renderLogbook();
         }
 
         function renderLogbook() {
             const container = document.getElementById('routes-list');
-            const gF = document.getElementById('filter-grade').value.toLowerCase();
-            const rF = document.getElementById('filter-rating').value;
+            const search = document.getElementById('filter-search').value.toLowerCase();
+            const grade = document.getElementById('filter-grade').value;
+            const rating = parseInt(document.getElementById('filter-rating').value);
+
+            const filtered = savedRoutes.filter(r => {
+                const matchSearch = r.name.toLowerCase().includes(search);
+                const matchGrade = !grade || r.grade === grade;
+                const matchRating = r.rating >= rating;
+                const matchBM = !bmFilterActive || r.isBenchmark;
+                return matchSearch && matchGrade && matchRating && matchBM;
+            });
+
             container.innerHTML = '';
-            savedRoutes.filter(r => {
-                const mg = r.grade.toLowerCase().includes(gF);
-                const mr = rF === 'all' ? true : r.rating >= parseInt(rF);
-                return mg && mr;
-            }).forEach(r => {
+            filtered.forEach(r => {
                 const card = document.createElement('div');
                 card.className = `route-card ${r.isBenchmark ? 'benchmark' : ''}`;
-                card.innerHTML = `<strong>${r.name}</strong> (${r.grade})<br><span style="color:gold">${"★".repeat(r.rating)}</span><br>
-                    <button class="btn-primary" style="padding:5px; margin-top:5px; width:auto; font-size:10px" onclick="editRoute(${r.id})">EDIT</button>
-                    <button class="btn-secondary" style="padding:5px; width:auto; font-size:10px" onclick="deleteRoute(${r.id})">DEL</button>`;
+                card.onclick = () => { 
+                    currentMoves = r.moves; 
+                    renderMarkers(); 
+                    if(window.innerWidth < 768) switchTab('create'); 
+                    resetZoom(); 
+                };
+                const stars = "★".repeat(r.rating) + "☆".repeat(3 - r.rating);
+                const ascentHtml = (r.ascents || []).map(name => `<span class="ascent-tag">${name}</span>`).join('');
+
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items: flex-start; margin-bottom: 5px;">
+                        <div>
+                            <strong>${r.name}</strong>
+                            <div style="font-size:10px; color:#aaa; margin-top:2px;">Set by: ${r.setter}</div>
+                        </div>
+                        <span style="font-weight:bold; color:var(--accent);">${r.grade}</span>
+                    </div>
+                    <div style="font-size:10px; color:#888;">${stars}</div>
+                    <div style="margin-top:5px;">${ascentHtml}</div>
+                    <button class="log-ascent-btn" onclick="logAscent(${r.id}, event)">+ LOG</button>
+                `;
                 container.appendChild(card);
             });
         }
 
-        function switchTab(t) {
-            document.getElementById('create-view').style.display = t === 'create' ? 'block' : 'none';
-            document.getElementById('list-view').style.display = t === 'list' ? 'block' : 'none';
-            document.getElementById('nav-create').classList.toggle('active', t === 'create');
-            document.getElementById('nav-list').classList.toggle('active', t === 'list');
-            if (t === 'list') renderLogbook();
+        function populateGrades() {
+            const select = document.getElementById('filter-grade');
+            const uniqueGrades = [...new Set(savedRoutes.map(r => r.grade))].sort();
+            uniqueGrades.forEach(g => {
+                const opt = document.createElement('option');
+                opt.value = g; opt.textContent = g;
+                select.appendChild(opt);
+            });
         }
 
-        function deleteRoute(id) { if(confirm("Delete?")) { savedRoutes = savedRoutes.filter(r => r.id !== id); localStorage.setItem('myRoutes', JSON.stringify(savedRoutes)); renderLogbook(); } }
+        function switchTab(t) {
+            document.getElementById('create-view').classList.toggle('active-panel', t === 'create');
+            document.getElementById('list-view').classList.toggle('active-panel', t === 'list');
+            document.getElementById('nav-create').classList.toggle('active', t === 'create');
+            document.getElementById('nav-list').classList.toggle('active', t === 'list');
+            document.getElementById('toggle-create').classList.toggle('active', t === 'create');
+            document.getElementById('toggle-list').classList.toggle('active', t === 'list');
+
+            if (window.innerWidth < 768) {
+                document.getElementById('create-view').style.display = t === 'create' ? 'flex' : 'none';
+                document.getElementById('list-view').style.display = t === 'list' ? 'flex' : 'none';
+            }
+        }
+
         function undoLastMove() { currentMoves.pop(); renderMarkers(); }
         function clearMoves() { currentMoves = []; renderMarkers(); }
-        function clearData() { if(confirm("Factory reset?")) { localStorage.clear(); location.reload(); } }
+        function clearData() { if(confirm("Reset all?")) { localStorage.clear(); location.reload(); } }
+
+        renderLogbook();
+        populateGrades();
     </script>
 </body>
 </html>
